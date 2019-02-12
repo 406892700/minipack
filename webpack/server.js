@@ -10,6 +10,7 @@ const webpackConfig = require('../webpack.config')
 
 // let reloadFlag = false
 let bundling = false
+let bindListener = false
 
 fs.watch(path.resolve(process.cwd(), './src'), { recursive: true}, (eventType, filename) => {
   if (!bundling) {
@@ -39,9 +40,11 @@ http.createServer((req, res) => {
       "Connection": "keep-alive",
     })
 
-    myEventEmitter.on('reload', () => {
+    !bindListener && myEventEmitter.on('reload', () => {
       res.write('data: reload\n\n')
     })
+
+    bindListener = true
 
     setInterval(() => {
       res.write('data: \uD83D\uDC93\n\n')

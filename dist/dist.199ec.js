@@ -19,9 +19,9 @@
       }
 
       // 入口文件id必定为0
-      require(0)
+      require(60)
     })({
-      0: [
+      60: [
         function(require, module, exports) {
           "use strict";
 
@@ -46,10 +46,10 @@ doc.querySelector('#closeBtn').addEventListener('click', function () {
 console.log('刷新2222');
 document.write('徐怀远');
         }, 
-        {"./greet/greet.js":1,"./index.less":2}
+        {"./greet/greet.js":61,"./index.less":62}
       ],
     
-      1: [
+      61: [
         function(require, module, exports) {
           "use strict";
 
@@ -69,10 +69,10 @@ exports.default = function () {
   console.log(_helloWorld2.default);
 };
         }, 
-        {"../helloWorld.js":3,"./greet.less":4}
+        {"../helloWorld.js":63,"./greet.less":64}
       ],
     
-      2: [
+      62: [
         function(require, module, exports) {
           "use strict";
 
@@ -86,7 +86,7 @@ doc.getElementsByTagName('head')[0].appendChild($style);
         {}
       ],
     
-      3: [
+      63: [
         function(require, module, exports) {
           "use strict";
 
@@ -98,11 +98,11 @@ exports.default = '社会主义好，真善美好';
         {}
       ],
     
-      4: [
+      64: [
         function(require, module, exports) {
           "use strict";
 
-var content = "body {\n  color: #999 !important;\n}\n";
+var content = "body {\n  color: #d00000 !important;\n  font-size: 123px;\n}\n";
 var doc = document;
 var $style = doc.createElement('style');
 $style.type = 'text/css';
