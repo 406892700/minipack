@@ -11,16 +11,54 @@
  * 并执行一些特定的业务逻辑,这便是插件【plugin】
  */
 
- const fs = require('fs')
- const path = require('path')
- const babylon = require('babylon')
- const traverse = require('babel-traverse').default
- const { transformFromAst } = require('babel-core')
+const fs = require('fs')
+const path = require('path')
 
- let ID = 0 // 模块id自增初始值
-  // 创建一个模块
-const createAsset = (filename) => {
-  const content = fs.readFileSync(filename, 'utf-8') // 读取到文件内容
+const babylon = require('babylon')
+const traverse = require('babel-traverse').default
+const {
+  transformFromAst
+} = require('babel-core')
+
+const {
+  SyncHook,
+  SyncBailHook,
+  SyncWaterfallHook,
+  SyncLoopHook,
+  AsyncParallelHook,
+  AsyncParallelBailHook,
+  AsyncSeriesHook,
+  AsyncSeriesBailHook,
+  AsyncSeriesWaterfallHook 
+} = require("tapable");
+
+const Asset = require('./Asset')
+const util = require('./util')
+const initplugins = require('./initPlugins')
+
+// 打包配置项
+let options
+
+// const hooks = {
+//   beforeGraphCreate: new SyncHook(['beforeGraphCreate']),
+//   graphCreated: new SyncHook(['graphCreated']),
+//   beforeBundle: new SyncHook(['beforeBundle']),
+//   bundled: new SyncHook(['bundled']),
+//   beforeEmit: new SyncHook(['beforeEmit']),
+//   emit: new SyncHook(['emit'])
+// }
+
+// 创建一个模块
+const createAsset = async (filename) => {
+  let content = fs.readFileSync(filename, 'utf-8') // 读取到文件内容
+
+  const { loaders } = options
+  for (let i = 0; i < loaders.length; i++) {
+    const { test, use } = loaders[i]
+    if (test.test(filename)) {
+      content = await use(content, options)
+    }
+  }
 
   // 文件内容中自然包含当前文件的依赖文件，
   // 我们可以通过正则字符串解析去做，但是这样做很复杂
@@ -38,7 +76,9 @@ const createAsset = (filename) => {
   // 因为需要理解import export的语义，
   // 所以这里还需要引入babel对ast的解析方法
   traverse(ast, {
-    ImportDeclaration: ({ node }) => {
+    ImportDeclaration: ({
+      node
+    }) => {
       // console.log(node)
       dependcies.push(node.source.value) // 当前模块的依赖
     }
@@ -48,26 +88,31 @@ const createAsset = (filename) => {
   // 这时候我们需要将原来的import export语法的代码转为浏览器可以识别的方法
   // 这里因为是从ast转译，所以还需要一个transformFromAst
 
-  const { code } = transformFromAst(ast, null, { // code就是转译后的代码
-    presets: ['env'] // 预设值env,包含所有等级的提案及标准的预设值
+  const {
+    code
+  } = transformFromAst(ast, null, { // code就是转译后的代码
+    presets: ['env'], // 预设值env,包含所有等级的提案及标准的预设值
+    plugins: [
+      ["@babel/plugin-transform-regenerator"]
+    ]
   })
 
 
   // console.log(code)
 
-  return {
-    id: ID++, // 模块id
+  return new Asset({
+    // id: ID++, // 模块id
     filename, // 模块入口文件路径
     dependcies, // 模块依赖列表
     source: code // code
-  }
+  })
 }
 
 // 写完了生成一个模块的代码，
 // 这时候需要生成模块依赖关系映射图了
 // 这里需要使用递归的方式来获取
-const createGraph = (filename) => {
-  const entryAsset = createAsset(filename)
+const createGraph = async (filename) => {
+  const entryAsset = await createAsset(filename)
 
   const queue = [entryAsset] // 依赖关系映射图，以数组存储
 
@@ -81,18 +126,17 @@ const createGraph = (filename) => {
     // 并且当前文件中必定有他所依赖的模块的相对路径
     // 因此 当前文件所在路径 + 依赖模块的相对路径 = 依赖模块的绝对路径
 
-    asset.dependcies.forEach(relativePath => {
+    for (let i = 0; i < asset.dependcies.length; i++) {
+      const relativePath = asset.dependcies[i]
       const moduleAbsolutePath = path.join(currentPath, relativePath)
-      const childAsset = createAsset(moduleAbsolutePath) // 子模块
+      const childAsset = await createAsset(moduleAbsolutePath) // 子模块
       asset.mapping[relativePath] = childAsset.id // relativePath -> moduleId的映射完成
       queue.push(childAsset) // 子模块进入队列，for of 循环将持续这个过程
-    })
+    }
   }
   // 返回队列，也就是我们的依赖关系映射图
   return queue
 }
-
-// createAsset('./src/index.js')
 
 // 创建完模块和模块依赖关系图
 // 接下来我们就需要开始进行打包操作了
@@ -109,7 +153,11 @@ const bundle = (graph) => {
 
   // 开始写逻辑 
   // 生成一个key-value形式的依赖关系对象
-  graph.forEach(({id, source, mapping}) => {
+  graph.forEach(({
+    id,
+    source,
+    mapping
+  }) => {
     modules += `
       ${id}: [
         function(require, module, exports) {
@@ -146,7 +194,7 @@ const bundle = (graph) => {
       }
 
       // 入口文件id必定为0
-      require(0)
+      require(${graph[0].id})
     })(${modules})
   `
 
@@ -154,11 +202,57 @@ const bundle = (graph) => {
 
 }
 
-const graph = createGraph('./src/index.js')
-const result = bundle(graph)
-// console.log(result)
+class Compiler {
+  constructor() {
+    this.hooks = {
+      beforeGraphCreate: new SyncHook(['beforeGraphCreate']),
+      graphCreated: new SyncHook(['graphCreated']),
+      beforeBundle: new SyncHook(['beforeBundle']),
+      bundled: new SyncHook(['bundled']),
+      beforeEmit: new SyncHook(['beforeEmit']),
+      emit: new SyncHook(['emit'])
+    }
+  }
+}
 
-fs.writeFileSync('./dist/result.js', result)
+const webpack = () => {
+
+}
+
+module.exports = (_options, callback = () => {}, initiate = true) => {
+  options = _options
+  const { entry, plugins, output: { path: outputPath, filename } } = _options
+  const { hooks } = new Compiler()
+
+  ;(async () => {
+    try {
+      initplugins(plugins, options, hooks)
+      hooks.beforeGraphCreate.call({ options }) // hooks beforeGraphCreate
+      const graph = await createGraph(entry)
+      hooks.graphCreated.call({ options, graph }) // hooks graphCreated
+      hooks.beforeBundle.call({ options, graph }) // hooks beforeBundle
+      const result = bundle(graph)
+      const distName = util.getOutputName(filename, result)
+      hooks.bundled.call({ options, graph, distName }) // hooks bundled
+      hooks.beforeEmit.call({ options, graph, result }) // hooks beforeEmit
+
+      if (!fs.existsSync(outputPath)) {
+        fs.mkdirSync(outputPath)
+      }
+
+      fs.writeFileSync(path.join(outputPath, distName), result)
+      
+      hooks.emit.call({ options, graph, distName }) // hooks emit
+    } catch(e) {
+      console.log(e)
+      callback(false, initiate)
+      return
+    }
+
+    callback(true, initiate)
+  })()
+}
+
 
 // 思考
 // 1. 我们在什么时候可以使用loaders
