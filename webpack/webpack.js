@@ -225,6 +225,7 @@ module.exports = (_options, callback = () => {}, initiate = true) => {
   const { hooks } = new Compiler()
 
   ;(async () => {
+    let chunkHash
     try {
       initplugins(plugins, options, hooks)
       hooks.beforeGraphCreate.call({ options }) // hooks beforeGraphCreate
@@ -232,7 +233,8 @@ module.exports = (_options, callback = () => {}, initiate = true) => {
       hooks.graphCreated.call({ options, graph }) // hooks graphCreated
       hooks.beforeBundle.call({ options, graph }) // hooks beforeBundle
       const result = bundle(graph)
-      const distName = util.getOutputName(filename, result)
+      const { distName, hash } = util.getOutputName(filename, result)
+      chunkHash = hash
       hooks.bundled.call({ options, graph, distName }) // hooks bundled
       hooks.beforeEmit.call({ options, graph, result }) // hooks beforeEmit
 
@@ -245,11 +247,11 @@ module.exports = (_options, callback = () => {}, initiate = true) => {
       hooks.emit.call({ options, graph, distName }) // hooks emit
     } catch(e) {
       console.log(e)
-      callback(false, initiate)
+      callback(false)
       return
     }
 
-    callback(true, initiate)
+    callback(true, { chunkHash })
   })()
 }
 

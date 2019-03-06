@@ -18,11 +18,26 @@ const getOutputName = (filename, content) => {
   const hashLength = getHashLength(filename)
   const hash = getHashSubfix(content, hashLength)
   const reg = /\[hash\:\d+\]/g
+  return {
+    distName: filename.replace(reg, hash),
+    hash: hash
+  }
+  // return filename.replace(reg, hash)
+}
+
+const getOutputNameWithHash = (filename, hash) => {
+  const reg = /\[hash\:\d+\]/g
   return filename.replace(reg, hash)
+}
+
+const getHotUpdateName = (hash) => {
+  return `hotUpdate.${hash}.json`
 }
 
 module.exports = {
   getHashSubfix, 
   getHashLength,
-  getOutputName
+  getOutputName,
+  getOutputNameWithHash,
+  getHotUpdateName
 }

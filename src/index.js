@@ -1,14 +1,11 @@
 import greet from './greet/greet.js'
 import './index.less'
 greet()
-const doc = document
-doc.querySelector('#clickBtn').addEventListener('click', () => {
-  doc.querySelector('#dialog').style.display = 'block'
-})
 
-doc.querySelector('#closeBtn').addEventListener('click', () => {
-  doc.querySelector('#dialog').style.display = 'none'
-})
+const $h2 = document.querySelector('h2')
+$h2.className = ''
+setTimeout(() => {
+  $h2.className = 'rubberBand'
+}, 300)
 
-console.log('刷新2222')
-document.write('徐怀远')
+console.log('111333333')

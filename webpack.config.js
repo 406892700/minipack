@@ -30,5 +30,10 @@ module.exports = {
         title: 'minipack test'
       }
     })
-  ]
+  ],
+  devServer: {
+    loop: 10000, // 心跳包间隔时间
+    hot: true, // 是否需要热更新
+    docBase: path.resolve(__dirname, './src') // 监听文件目录
+  }
 }
