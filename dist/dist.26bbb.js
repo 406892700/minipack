@@ -19,9 +19,9 @@
       }
 
       // 入口文件id必定为0
-      require(36)
+      require(12)
     })({
-      36: [
+      12: [
         function(require, module, exports) {
           "use strict";
 
@@ -43,10 +43,10 @@ setTimeout(function () {
 
 console.log('111333333');
         }, 
-        {"./greet/greet.js":37,"./index.less":38}
+        {"./greet/greet.js":13,"./index.less":14}
       ],
     
-      37: [
+      13: [
         function(require, module, exports) {
           "use strict";
 
@@ -66,10 +66,10 @@ exports.default = function () {
   console.log(_helloWorld2.default);
 };
         }, 
-        {"../helloWorld.js":39}
+        {"../helloWorld.js":15}
       ],
     
-      38: [
+      14: [
         function(require, module, exports) {
           "use strict";
 
@@ -83,7 +83,7 @@ doc.getElementsByTagName('head')[0].appendChild($style);
         {}
       ],
     
-      39: [
+      15: [
         function(require, module, exports) {
           "use strict";
 

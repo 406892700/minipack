@@ -30,9 +30,9 @@
       evtSource.onmessage = function (e) {
         if (e.data !== '\uD83D\uDC93') { // 不是心跳包的时候
           console.log('[hmr]: app updated!')
-          const ret = JSON.stringify(e.data)
+          const ret = JSON.parse(e.data)
           if (ret.hot) {
-            evalChunk(e.data)
+            evalChunk(ret.hashPath)
           } else {
             window.location.reload()
           }
@@ -59,7 +59,7 @@
 
 <body>
   <h2>热更新/自动刷新</h2>
-<script src="./dist.ce506.js"></script>
+<script src="./dist.26bbb.js"></script>
 </body>
 
 </html>

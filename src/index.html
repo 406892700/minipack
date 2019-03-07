@@ -30,9 +30,9 @@
       evtSource.onmessage = function (e) {
         if (e.data !== '\uD83D\uDC93') { // 不是心跳包的时候
           console.log('[hmr]: app updated!')
-          const ret = JSON.stringify(e.data)
+          const ret = JSON.parse(e.data)
           if (ret.hot) {
-            evalChunk(e.data)
+            evalChunk(ret.hashPath)
           } else {
             window.location.reload()
           }
